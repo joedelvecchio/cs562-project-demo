@@ -1,5 +1,5 @@
 import subprocess
-#from helper import ...
+#from helper import create_mf_struct, print_mf_struct
 
 def main():
     """
