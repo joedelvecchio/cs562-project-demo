@@ -1,4 +1,5 @@
-def create_mf_struct(file):
+#reading from file
+def read_file(file):
     mf_struct = {}
     try:
         # Read file contents
@@ -41,8 +42,36 @@ def create_mf_struct(file):
         return None
 
     return mf_struct
+        
+#manual input from user
+def user_input():
+    select = input("Enter the SELECT clause: ")
+    grouping_variables = input("Enter the number of grouping variables: ")
+    grouping_attributes = input("Enter the grouping attributes: ")
+    list_of_aggregates = input("Enter the list of aggregate functions: ")
+    select_condition = input("Enter the predicates for the grouping variables: ")
+    having_clause = input("Enter the HAVING clause: ")
 
-def print_mf_struct(mf_struct):
-    for key, value in mf_struct.items():
-        print(key)
-        print(value, end='\n')
+#if user wants to read from file or provide input
+def get_phi_args():
+    print("Select one of the options when prompted: ")
+    print("Enter '1' to read from a file")
+    print("Enter '2' to input manually")
+    choice = input("Enter your choice: ")
+    if choice == "1":
+        read_file()
+        return
+    elif choice == "2":
+        user_input()
+        return
+    else:
+        print("Invalid input. Select a valid option.")
+        get_phi_args()
+
+#connect to database 
+def db_connect():
+
+#initialize the database
+def db_init():
+
+#generate code for H table 
