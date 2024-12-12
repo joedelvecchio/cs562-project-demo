@@ -18,23 +18,23 @@ def read_file(file):
         while idx < len(contents):
             line = contents[idx]
             if line == 'SELECT ATTRIBUTE(S):':
-                select = lines[x+1].replace(" ", "") 
-                x += 2
+                select = lines[idx+1].replace(" ", "") 
+                idx += 2
             elif line == 'NUMBER OF GROUPING VARIABLES(n):':
-                grouping_variables = lines[x+1].replace(" ", "")
-                x += 2
+                grouping_variables = lines[idx+1].replace(" ", "")
+                idx += 2
             elif line == 'GROUPING ATTRIBUTES(V):':
-                grouping_attributes = lines[x+1].replace(" ", "")
-                x += 2
+                grouping_attributes = lines[idx+1].replace(" ", "")
+                idx += 2
             elif line == 'F-VECT([F]):':
-                list_of_aggregates = lines[x+1].replace(" ", "")
-                x += 2
+                list_of_aggregates = lines[idx+1].replace(" ", "")
+                idx += 2
             elif line == 'SELECT CONDITION-VECT([C]):':
-                select_condition = lines[x+1].replace(" ", "")
-                x += 2
+                select_condition = lines[idx+1].replace(" ", "")
+                idx += 2
             elif line == 'HAVING CLAUSE (G):':
-                having_clause = lines[x+1]
-                x += 2
+                having_clause = lines[idx+1]
+                idx += 2
     except:
         print("Error processing file")
         read_file(file)
