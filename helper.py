@@ -4,7 +4,7 @@ import psycopg2
 def read_file(file):
     try:
         # Read file contents
-        with open(file_path, 'r') as f:
+        with open(file, 'r') as f:
             contents = f.read().splitlines()
 
         # Parse the contents
