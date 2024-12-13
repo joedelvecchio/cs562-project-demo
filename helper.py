@@ -1,13 +1,13 @@
 import psycopg2
 
-#reading from file
+# reading from file
 def read_file(file):
     try:
-        # Read file contents
+        # read file contents
         with open(file, 'r') as f:
             contents = f.read().splitlines()
 
-        # Parse the contents
+        # parse the contents
         select = ""
         grouping_variables = ""
         grouping_attributes = ""
@@ -40,7 +40,7 @@ def read_file(file):
         read_file(file)
 
         
-#manual input from user
+# manual input from user
 def user_input():
     select = input("Enter the SELECT clause: ")
     grouping_variables = input("Enter the number of grouping variables: ")
@@ -49,7 +49,7 @@ def user_input():
     select_condition = input("Enter the predicates for the grouping variables: ")
     having_clause = input("Enter the HAVING clause: ")
 
-#if user wants to read from file or provide input
+# if user wants to read from file or provide input
 def get_phi_args(file):
     print("Select one of the options when prompted: ")
     print("Enter '1' to read from a file")
@@ -65,7 +65,7 @@ def get_phi_args(file):
         print("Invalid input. Select a valid option.")
         get_phi_args()
 
-#connect to database 
+# connect to database 
 def db_connect():
         db = psycopg2.connect(
         host = '',
@@ -77,11 +77,9 @@ def db_connect():
     cursor = db.cursor()
     return cursor, db
 
-#initialize the database
+# initialize the database
 def db_init(db):
     init = open("load_sales_10000_table (NEW).sql", "r")
     for line in init:
         db.execute(line)
     init.close()
-    
-#generate code for H table 
