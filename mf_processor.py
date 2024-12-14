@@ -39,47 +39,53 @@ class MFStructure:
         - tuple_data: Dictionary containing a row from the sales table
         - scan_number: Current scan number (0-based index)
         """
-        # Create group key from grouping attributes
-        group_key_parts = []
-        for attr in self.grouping_attrs:
-            val = tuple_data[attr]
-            # Handle different data types
-            if self.schema[attr] in ('varchar', 'char'):
-                val = str(val).strip()
-            group_key_parts.append(str(val))
-        group_key = '_'.join(group_key_parts)
+        # Debug print
+        print(f"\nProcessing tuple for scan {scan_number}")
+        print(f"Condition for this scan: {self.conditions[scan_number]}")
+        print(f"Tuple data: {tuple_data}")
         
-        # First scan: initialize entry if needed
+        # Get grouping key (e.g., customer for grouping by customer)
+        group_key = tuple_data[self.grouping_attrs[0]]  # Assuming single grouping attribute for now
+        
+        # If this is first scan (scan_number == 0), initialize entry
         if scan_number == 0:
             if group_key not in self.mf_struct:
+                # Initialize the entry
                 self.mf_struct[group_key] = self._initialize_aggregates()
-                # Store original values for grouping attributes
-                for attr in self.grouping_attrs:
-                    self.mf_struct[group_key][attr] = tuple_data[attr]
+                # Store the actual grouping attribute value
+                self.mf_struct[group_key][self.grouping_attrs[0]] = group_key
         
-        # Check if tuple satisfies condition for current scan
-        if self._check_condition(tuple_data, self.conditions[scan_number]):
+        # Check condition
+        condition_result = self._check_condition(tuple_data, self.conditions[scan_number])
+        print(f"Condition check result: {condition_result}")
+        
+        # Continue with existing logic if condition is true
+        if condition_result:
             self._update_aggregates(group_key, tuple_data, scan_number)
     
     def _initialize_aggregates(self):
         """Initialize aggregate values for a new group"""
         aggregates = {}
+        # Keep track of the original grouping attribute
+        for attr in self.grouping_attrs:
+            aggregates[attr] = None
+            
+        # Initialize aggregates based on f_vect from first input
+        # e.g., count_1_quant, sum_2_quant, max_3_quant
         for f in self.f_vect:
-            agg_parts = f.split('_')
-            if len(agg_parts) >= 3:  # format: 1_sum_quant or similar
-                scan_num, agg_type, field = agg_parts[0], agg_parts[1], '_'.join(agg_parts[2:])
-                if agg_type == 'sum':
-                    aggregates[f] = 0
-                elif agg_type == 'count':
-                    aggregates[f] = 0
-                elif agg_type == 'max':
-                    aggregates[f] = float('-inf')
-                elif agg_type == 'min':
-                    aggregates[f] = float('inf')
-                elif agg_type == 'avg':
-                    # For average, store sum and count separately
-                    aggregates[f + '_sum'] = 0
-                    aggregates[f + '_count'] = 0
+            if 'count_' in f:
+                aggregates[f] = 0
+            elif 'sum_' in f:
+                aggregates[f] = 0
+            elif 'max_' in f:
+                aggregates[f] = float('-inf')
+            elif 'min_' in f:
+                aggregates[f] = float('inf')
+            elif 'avg_' in f:
+                # For average, store sum and count separately
+                aggregates[f + '_sum'] = 0
+                aggregates[f + '_count'] = 0
+
         return aggregates
     
     def _check_condition(self, tuple_data, condition):
@@ -88,36 +94,57 @@ class MFStructure:
         
         Parameters:
         - tuple_data: Dictionary containing a row from the sales table
-        - condition: Condition string (e.g., "state='NY'")
+        - condition: Condition string (e.g., "state='NY' and year=2023")
         """
         if not condition or condition == '-':
             return True
-            
-        # Parse condition
+                
         try:
-            # Handle different comparison operators
-            for op in ['>=', '<=', '!=', '=', '>', '<']:
-                if op in condition:
-                    field_expr, value_expr = condition.split(op)
-                    break
+            # Handle multiple conditions joined by 'and'
+            sub_conditions = [cond.strip() for cond in condition.split(' and ')]
             
-            # Extract field name (remove grouping variable prefix if present)
-            field = field_expr.split('.')[-1].strip()
-            value = value_expr.strip().strip("'")
+            for sub_condition in sub_conditions:
+                # Find the comparison operator
+                operators = ['>=', '<=', '!=', '=', '>', '<']
+                found_op = False
+                
+                for op in operators:
+                    if op in sub_condition:
+                        parts = sub_condition.split(op)
+                        if len(parts) != 2:
+                            print(f"Invalid condition format: {sub_condition}")
+                            return False
+                        
+                        field_expr, value_expr = parts
+                        
+                        # Extract field name (remove grouping variable prefix if present)
+                        field = field_expr.split('.')[-1].strip()
+                        value = value_expr.strip().strip("'")
+                        
+                        # Get actual values
+                        tuple_value = str(tuple_data[field]).strip()
+                        
+                        # Compare based on data type
+                        if self.schema[field] in ('varchar', 'char'):
+                            tuple_value = tuple_value.strip()
+                            value = value.strip()
+                            if not self._compare_values(tuple_value, value, op):
+                                return False
+                        elif self.schema[field] == 'integer':
+                            if not self._compare_values(int(tuple_value), int(value), op):
+                                return False
+                        elif self.schema[field] == 'date':
+                            if not self._compare_values(tuple_value, value, op):
+                                return False
+                        
+                        found_op = True
+                        break
+                
+                if not found_op:
+                    print(f"No valid operator found in condition: {sub_condition}")
+                    return False
             
-            # Get actual values
-            tuple_value = str(tuple_data[field]).strip()
-            
-            # Compare based on data type
-            if self.schema[field] in ('varchar', 'char'):
-                tuple_value = tuple_value.strip()
-                value = value.strip()
-                return self._compare_values(tuple_value, value, op)
-            elif self.schema[field] == 'integer':
-                return self._compare_values(int(tuple_value), int(value), op)
-            elif self.schema[field] == 'date':
-                # Add date comparison if needed
-                return tuple_value == value
+            return True
             
         except Exception as e:
             print(f"Error in condition check: {e}")
@@ -192,17 +219,20 @@ class MFStructure:
             return True
             
         try:
+            # Import math to use math.inf
+            import math
+            
             # Replace aggregate function references with actual values
             condition = self.having
             for f in self.f_vect:
                 if f in condition:
                     if '_avg_' in f:
-                        if entry[f + '_count'] > 0:
+                        if entry.get(f + '_count', 0) > 0:
                             value = entry[f + '_sum'] / entry[f + '_count']
                         else:
                             value = 0
                     else:
-                        value = entry[f]
+                        value = entry.get(f, 0)
                     condition = condition.replace(f, str(value))
             
             return eval(condition)
@@ -217,20 +247,44 @@ class MFStructure:
             row = {}
             # Add grouping attributes
             for attr in self.grouping_attrs:
-                row[attr] = entry[attr]
+                row[attr] = entry.get(attr, None)
             
             # Add aggregate values
             for attr in self.select_attrs:
                 if attr in self.grouping_attrs:
                     continue
                 if '_avg_' in attr:
-                    if entry[attr + '_count'] > 0:
-                        row[attr] = round(entry[attr + '_sum'] / entry[attr + '_count'], 2)
+                    count_key = attr + '_count'
+                    sum_key = attr + '_sum'
+                    if entry.get(count_key, 0) > 0:
+                        row[attr] = round(entry[sum_key] / entry[count_key], 2)
                     else:
                         row[attr] = 0
                 else:
-                    row[attr] = entry[attr]
+                    row[attr] = entry.get(attr, 0)
             results.append(row)
         
         # Sort results by grouping attributes
-        return sorted(results, key=lambda x: [str(x[attr]) for attr in self.grouping_attrs])
+        return sorted(results, key=lambda x: [str(x.get(attr, '')) for attr in self.grouping_attrs])
+
+    def process_all_scans(self, cursor):
+        """Process all scans according to EMF algorithm 3.1"""
+        print("\nProcessing all scans...")
+        
+        for scan in range(self.num_grouping_vars):
+            print(f"\nStarting scan {scan + 1} with condition: {self.conditions[scan]}")
+            cursor.execute("SELECT * FROM sales")
+            count_total = 0
+            count_matched = 0
+            for row in cursor:
+                count_total += 1
+                if self._check_condition(dict(row), self.conditions[scan]):
+                    self.process_tuple(dict(row), scan)
+                    count_matched += 1
+            print(f"Total rows: {count_total}, Matched rows: {count_matched}")
+        
+        print("\nApplying having clause...")
+        self.evaluate_having()
+        
+        print("\nGenerating final results...")
+        return self.get_results()

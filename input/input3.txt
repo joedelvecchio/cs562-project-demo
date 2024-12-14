@@ -1,0 +1,12 @@
+SELECT ATTRIBUTE(S):
+prod, 1_count_quant, 1_sum_quant, 2_avg_quant, 3_max_quant
+NUMBER OF GROUPING VARIABLES(n):
+3
+GROUPING ATTRIBUTES(V):
+prod
+F-VECT([F]):
+1_count_quant, 1_sum_quant, 2_avg_quant, 3_max_quant
+SELECT CONDITION-VECT([C]):
+1.state = 'NY'; 2.state = 'CA'; 3.state = 'TX'
+HAVING CLAUSE (G):
+1_sum_quant > 1000 and 3_max_quant > 500
