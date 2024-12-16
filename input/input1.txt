@@ -1,12 +1,14 @@
 SELECT ATTRIBUTE(S):
-cust, count_1_quant, sum_2_quant, max_3_quant
+cust, 1_count_quant, 2_sum_quant, 3_max_quant
 NUMBER OF GROUPING VARIABLES(n):
 3
 GROUPING ATTRIBUTES(V):
 cust
 F-VECT([F]):
-count_1_quant, sum_2_quant, max_3_quant
+1_count_quant, 2_sum_quant, 3_max_quant
 SELECT CONDITION-VECT([C]):
-1.state = 'NY' ; 2.state = 'NJ' ; 3.state = 'CT'
+1.state = 'NY'
+2.state = 'NJ' 
+3.state = 'CT'
 HAVING CLAUSE (G):
 -
